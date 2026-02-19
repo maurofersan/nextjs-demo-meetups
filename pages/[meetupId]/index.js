@@ -1,43 +1,58 @@
+import Head from "next/head";
+import { MongoClient, ObjectId } from "mongodb";
+
 import MeetupDetail from "@/components/meetups/MeetupDetail";
 
 const MeetupDetailPage = ({ meetupData }) => {
   return (
-    <MeetupDetail
-      title={meetupData.title}
-      image={meetupData.image}
-      description={meetupData.description}
-      address={meetupData.address}
-    />
+    <>
+      <Head>
+        <title>{meetupData.title}</title>
+        <meta name="description" content={meetupData.description} />
+      </Head>
+      <MeetupDetail
+        title={meetupData.title}
+        image={meetupData.image}
+        description={meetupData.description}
+        address={meetupData.address}
+      />
+    </>
   );
 };
 
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(process.env.DB_URL);
+  const db = client.db();
+  const collection = db.collection("meetups");
+  const meetups = await collection
+    .find({}, { projection: { _id: 1 } })
+    .toArray();
+  client.close();
+
   return {
-    fallback: false,
-    paths: [
-      {
-        params: { meetupId: "m1" },
-      },
-      {
-        params: { meetupId: "m2" },
-      },
-    ],
+    fallback: true,
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
   };
 }
 
 export async function getStaticProps(context) {
   const meetupId = context.params.meetupId;
-  console.log("meetupId:", meetupId);
+  const client = await MongoClient.connect(process.env.DB_URL);
+  const db = client.db();
+  const collection = db.collection("meetups");
+  const meetup = await collection.findOne({ _id: new ObjectId(meetupId) });
+  client.close();
 
   return {
     props: {
       meetupData: {
-        id: meetupId,
-        title: "First meetup",
-        image:
-          "https://images.squarespace-cdn.com/content/v1/603709c4fe10c7013cc59c86/1643927361362-062ORYR7Q698R0GS4KOP/unsplash-image-PTRzqc_h1r4.jpg",
-        description: "Some city 5, some street 12",
-        address: "Some description for this frist meetup",
+        id: meetup._id.toString(),
+        title: meetup.title,
+        image: meetup.image,
+        description: meetup.description,
+        address: meetup.address,
       },
     },
   };
