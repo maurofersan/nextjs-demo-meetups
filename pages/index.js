@@ -13,7 +13,7 @@ const HomePage = ({ meetups }) => {
           content="Browse a huge list of highly active React meetups!"
         />
       </Head>
-      <MeetupList meetups={meetups} />;
+      <MeetupList meetups={meetups} />
     </>
   );
 };
@@ -46,7 +46,7 @@ export async function getStaticProps() {
         address: meetup.address,
       })),
     },
-    revalidate: 10,
+    revalidate: 1,
   };
 }
 
